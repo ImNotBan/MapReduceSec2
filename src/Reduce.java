@@ -8,8 +8,29 @@ import java.util.*;
 //import com.google.common.collect.Multimaps;
 
 
-class Reduce
+
+// runnable per tal que es puguin utilitzar objectes Reduce com una tasca executada per un fil.
+class Reduce implements Runnable
 {
+    private long differentWords = 0;
+    private Error result = null;
+
+    public long getDifferentWords() {
+        return differentWords;
+    }
+
+    public Error getResult()
+    {
+        return result;
+    }
+
+    // runnable no retorna cap valor, per això guardem el resultat de Run() a result.
+    @Override
+    public void run()
+    {
+        result = Run();
+    }
+
 	private MapReduce 	mapReduce;
 	PrintWriter 		OutputFile;
 	//private ListMultimap<String, Integer> Input = Multimaps.synchronizedListMultimap(ArrayListMultimap.<String, Integer> create());
@@ -63,22 +84,22 @@ class Reduce
 	// Función de ejecución de la tarea Reduce: por cada tupla de entrada invoca a la función 
 	// especificada por el programador, pasandolo el objeto Reduce, la clave y la lista de 
 	// valores.
-	public Error Run() 
+	public Error Run()
 	{
 		Iterator<String> keyIterator = Input.keySet().iterator();
 		while(keyIterator.hasNext())
 		{
 			String key = keyIterator.next();
-			
+
 			Error err = mapReduce.Reduce(this, key, Input.get(key));
 			if (err!=Error.COk)
 				return(err);
-			
+
 			keyIterator.remove();
 		}
-		
+
 		Finish();
-		
+
 		return(Error.COk);
 	}
 
@@ -87,7 +108,8 @@ class Reduce
 	public void EmitResult(String key, int value)
 	{
 		OutputFile.write(key + " " + value + "\n");
-		MapReduce.DifferentWords++;
+//		MapReduce.DifferentWords++;
+        differentWords++;           // per evitar perdre increments entre reducers
 	}
 
 		
