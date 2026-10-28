@@ -4,7 +4,7 @@ out/
 *.jar
 
 # Resultados generados por la ejecución
-MapReduceSec/Output/
+Output/
 
 # Configuración local de IntelliJ
 .idea/workspace.xml
