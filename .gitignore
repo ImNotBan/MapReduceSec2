@@ -1,0 +1,12 @@
+# Compilados de IntelliJ
+out/
+*.class
+*.jar
+
+# Resultados generados por la ejecución
+MapReduceSec/Output/
+
+# Configuración local de IntelliJ
+.idea/workspace.xml
+.idea/shelf/
+.idea/usage.statistics.xml
