@@ -31,8 +31,13 @@ public class Map
 	private MapReduce mapReduce;
 	private Vector<MapInputTuple> Input = new Vector<MapInputTuple>();
 	private HashMap<String, List<Integer>> Output = new HashMap<String, List<Integer>>();
+    private long totalWords = 0;
 
-	public Map(MapReduce mapr)
+    public long getTotalWords() {
+        return totalWords;
+    }
+
+    public Map(MapReduce mapr)
 	{	
 		mapReduce=mapr;
 	}
@@ -95,7 +100,7 @@ public class Map
 		//Output.put(key,Integer.valueOf(value));
 		Output.computeIfAbsent(key, k -> new ArrayList<>()).add(Integer.valueOf(value));
 
-		MapReduce.TotalWords++;
+		totalWords++;
 	}
 
 }

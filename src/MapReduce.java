@@ -163,7 +163,8 @@ abstract class MapReduce
 	
 	// Ejecuta cada uno de los Maps.
 	private Error Maps()
-	{	
+	{
+        TotalWords = 0;
 		for(Map map : Mappers)
 		{
 			if (MapReduce.DEBUG) System.err.println("DEBUG::Running Map "+ map);
@@ -171,6 +172,7 @@ abstract class MapReduce
 			if (map.Run()!=Error.COk)
 				Error.showError("MapReduce::Map Run error.\n");
 			MappersRunning.decrementAndGet();
+            TotalWords += map.getTotalWords();
 		}
 		System.out.println("\nMappers han procesado un total de "+TotalWords+" palabras.");
 		return(Error.COk);
