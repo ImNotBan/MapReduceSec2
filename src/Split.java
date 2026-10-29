@@ -1,7 +1,7 @@
 import java.io.*;
 import java.util.Vector;
 
-public class Split
+public class Split implements Runnable
 {
     private Vector<MapInputTuple> Input = new Vector<MapInputTuple>();
 
@@ -10,39 +10,53 @@ public class Split
         return(Input);
     }
 
+
+    private final String fileName;
+
+    public Split(String fileName){
+        this.fileName = fileName;
+    }
+
+    private Error result = Error.CError;
+    public Error getResult(){
+        return result;
+    }
+
+    @Override
+    public void run(){
+        try {
+            result = ReadFileTuples(fileName);
+        } catch (RuntimeException e) {
+            System.err.println("Split::ERROR Reading file " + fileName + ": " + e.getMessage());
+            result = Error.CErrorReadingFile;
+        }
+    }
+
+
     // Lee fichero de entrada (split) línea a línea y lo guarda en un vector en forma de tuplas (key,value).
     public Error ReadFileTuples(String fileName)
     {
         long Offset=0;
-        FileInputStream fis;
+        if (Thread.currentThread().isInterrupted())
+            return Error.CError;
 
-        try {
-            fis = new FileInputStream(fileName);
-        } catch (FileNotFoundException e) {
-            System.err.println("Map::ERROR File "+fileName+" not found.");
-            e.printStackTrace();
-            return(Error.CErrorOpenInputFile);
-        }
-
-        //Construct BufferedReader from InputStreamReader
-        BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-
-        String line = null;
-        try {
+        // El lector es tanca tant si la lectura acaba be com si falla.
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(fileName)))) {
+            String line;
             while ((line = br.readLine())!=null)
             {
+                if (Thread.currentThread().isInterrupted())
+                    return Error.CError;
                 if (MapReduce.DEBUG) System.err.println("DEBUG::Map input " + Offset + " -> " + line);
                 AddInput(new MapInputTuple(Offset, line));
                 Offset+=line.length();
             }
-        } catch (IOException e) {
-            System.err.println("Map::ERROR Reading file "+fileName+".");
+        } catch (FileNotFoundException e) {
+            System.err.println("Split::ERROR File "+fileName+" not found.");
             e.printStackTrace();
-            return(Error.CErrorReadingFile);
-        }
-        try {
-            br.close();
+            return(Error.CErrorOpenInputFile);
         } catch (IOException e) {
+            System.err.println("Split::ERROR Reading file "+fileName+".");
             e.printStackTrace();
             return(Error.CErrorReadingFile);
         }

@@ -106,26 +106,81 @@ abstract class MapReduce
 		return(Error.COk);
 	}
 
-	// Procesa los ficheros de entrada para generar los diferentes split y posteriormente crea un mapper para procesarlos
-	// Versión secuencial: asume que un único Map va a procesar todos los splits.
+	// Preparar els Splits, llegir els fitxers alhora i crear un Map per cada Split.
 	private Error Split(String inputDir)
 	{
-		Error cod;
+		Error cod = ProcessInputFiles(inputDir);
+		if (cod != Error.COk)
+			return cod;
 
-		// Process input files
-		cod = ProcessInputFiles(inputDir);
-
-		if (cod==Error.COk)
+		Vector<Thread> threads = new Vector<Thread>();
+		try
 		{
-            // crear un map per cada split
-			for(Split split : Splits){
-                Map mapper = new Map(this, split);
-                AddMapper(mapper);
+			// Iniciar totes les lectures abans d'esperar-ne cap.
+			for (Split split : Splits)
+			{
+				if (Thread.currentThread().isInterrupted())
+					throw new InterruptedException();
+				Thread thread = Thread.ofVirtual().unstarted(split);
+				threads.add(thread);
+				thread.start();
+			}
 
-            }
-
+			// Esperar que tots els fitxers estiguin llegits.
+			for (Thread thread : threads)
+				thread.join();
 		}
-		return cod;
+		catch (InterruptedException e)
+		{
+			StopSplitThreads(threads);
+			Thread.currentThread().interrupt();
+			return Error.CError;
+		}
+		catch (RuntimeException e)
+		{
+			StopSplitThreads(threads);
+			System.err.println("MapReduce::Split thread error: " + e.getMessage());
+			return Error.CError;
+		}
+
+		// Consultar els resultats un cop els fils han acabat.
+		for (Split split : Splits)
+			if (split.getResult() != Error.COk)
+				return split.getResult();
+
+		for (Split split : Splits)
+		{
+			split.AddInput(new MapInputTuple(-1, ""));
+			incProcessedFiles();
+			AddMapper(new Map(this, split));
+		}
+
+		return Error.COk;
+	}
+
+	// Si el coordinador falla, aturar i esperar les lectures que ja ha iniciat.
+	private void StopSplitThreads(Vector<Thread> threads)
+	{
+		for (Thread thread : threads)
+			thread.interrupt();
+
+		boolean interrupted = false;
+		for (Thread thread : threads)
+		{
+			while (thread.isAlive())
+			{
+				try
+				{
+					thread.join();
+				}
+				catch (InterruptedException e)
+				{
+					interrupted = true;
+				}
+			}
+		}
+		if (interrupted)
+			Thread.currentThread().interrupt();
 	}
 
     private Error ProcessInputFiles(String input)
@@ -155,20 +210,9 @@ abstract class MapReduce
 
 	private Error ProcessInputFile(File file)
 	{
-        Split split = new Split();
-
-        System.out.println("Processing  input file " + file.getName() + ".");
-
-
-        // Llegir les línies i comprovar si hi ha hagut algun error.
-        Error result = split.ReadFileTuples(file.getAbsolutePath());
-        if (result != Error.COk) return result;
-
-        split.AddInput(new MapInputTuple(-1, ""));
-
+        Split split = new Split(file.getAbsolutePath());
+        System.out.println("Processing input file " + file.getName() + ".");
         AddSplit(split);
-        incProcessedFiles();
-
         return Error.COk;
 	}
 	
