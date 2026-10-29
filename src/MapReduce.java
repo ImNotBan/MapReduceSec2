@@ -4,6 +4,7 @@ import java.util.Vector;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -29,6 +30,10 @@ abstract class MapReduce
 	private Vector<Split> Splits =  new Vector<Split>();
 	private Vector<Map> Mappers =  new Vector<Map>();
 	private Vector<Reduce> Reducers =  new Vector<Reduce>();
+
+	// una cua thread-safe per cada fil de shuffle, on els mappers deixen les tuples (clau, valor)
+	private Vector<LinkedBlockingQueue<AbstractMap.SimpleEntry<String, Integer>>> ShuffleQueues =
+			new Vector<LinkedBlockingQueue<AbstractMap.SimpleEntry<String, Integer>>>();
 
 
 	// Set and Gets
@@ -71,7 +76,10 @@ abstract class MapReduce
 		DeleteOutputFiles();
 
 		for(int x=0;x<NReducers;x++)
+		{
 			AddReduce(new Reduce(this, OutputFiles +".r"+(x+1)));
+			ShuffleQueues.add(new LinkedBlockingQueue<AbstractMap.SimpleEntry<String, Integer>>());
+		}
 
 		return Error.COk;
 	}
@@ -187,40 +195,144 @@ abstract class MapReduce
 	
 	
 	
+	// funcio de particio: el hash de la clau decideix a quina cua de shuffle va la tupla.
+	// es pot cridar des de diversos fils map alhora perque les cues son thread-safe.
+	public void AddShuffleInput(String key, Integer value)
+	{
+		int r = Math.abs(key.hashCode() % NReducers);
+
+		if (MapReduce.DEBUG) System.err.println("DEBUG::MapReduce::Suffle merge key " + key +" to reduce " + r);
+
+		ShuffleQueues.get(r).add(new AbstractMap.SimpleEntry<String, Integer>(key, value));
+	}
+
+	// tasca d'un fil de shuffle: llegeix les tuples de la seva cua, les junta i les ordena per clau.
+	// acaba quan no queden mappers actius i la cua es buida. al final passa les claus al seu reducer.
+	private class SuffleTask implements Callable<Error>
+	{
+		private int r;
+
+		public SuffleTask(int r)
+		{
+			this.r = r;
+		}
+
+		@Override
+		public Error call() throws InterruptedException
+		{
+			LinkedBlockingQueue<AbstractMap.SimpleEntry<String, Integer>> queue = ShuffleQueues.get(r);
+			// el treemap junta els valors de cada clau i mante les claus ordenades
+			TreeMap<String, List<Integer>> keys = new TreeMap<String, List<Integer>>();
+
+			while (MappersRunning.get() > 0 || !queue.isEmpty())
+			{
+				// espera com a molt 10 ms perque no es quedi bloquejat si ja no arriben mes dades
+				AbstractMap.SimpleEntry<String, Integer> tuple = queue.poll(10, TimeUnit.MILLISECONDS);
+
+				if (tuple != null)
+				{
+					List<Integer> values = keys.get(tuple.getKey());
+					if (values == null)
+					{
+						values = new ArrayList<Integer>();
+						keys.put(tuple.getKey(), values);
+					}
+					values.add(tuple.getValue());
+				}
+			}
+
+			// nomes aquest fil toca aquest reducer, per tant no hi ha condicions de carrera
+			for (String key : keys.keySet())
+				Reducers.get(r).AddInputKeys(key, keys.get(key));
+
+			return(Error.COk);
+		}
+	}
+
 	// Ordena y junta todas las tuplas de salida de los maps. Utiliza una función de hash como 
 	// función de partición, para distribuir las claves entre los posibles reducers.
-	// Utiliza un multimap para realizar la ordenación/unión.
 	private Error Suffle()
 	{
+		// temporal: mentre Map no cridi AddShuffleInput, passem aqui les sortides dels mappers a les cues.
+		// s'ha de treure quan el map concurrent envii directament a les cues
 		for(Map map : Mappers)
 		{
 			if (MapReduce.DEBUG) map.PrintOutputs();
 
 			for (String key : map.GetOutput().keySet())
-			{		    
-			    // Calcular a que reducer le corresponde está clave:
-				int r = Math.abs(key.hashCode())%Reducers.size();
-	
-				if (MapReduce.DEBUG) System.err.println("DEBUG::MapReduce::Suffle merge key " + key +" to reduce " + r);
-	
-				// Añadir todas las tuplas de la clave al reducer correspondiente.
-				Reducers.get(r).AddInputKeys(key, map.GetOutput().get(key));
-			}
-			
+				for (Integer value : map.GetOutput().get(key))
+					AddShuffleInput(key, value);
+
 			// Eliminar todas las salidas.
 			map.GetOutput().clear();
 		}
-		
-		return(Error.COk);
+
+		ExecutorService executor = Executors.newFixedThreadPool(NReducers);
+		Vector<Future<Error>> futures = new Vector<Future<Error>>();
+
+		// un fil de shuffle per cada reducer
+		for (int r = 0; r < NReducers; r++)
+			futures.add(executor.submit(new SuffleTask(r)));
+
+		// esperar que acabin tots els fils de shuffle
+		Error result = Error.COk;
+		try
+		{
+			for (Future<Error> future : futures)
+			{
+				if (future.get() != Error.COk)
+					result = Error.CError;
+			}
+		}
+		catch (InterruptedException e)
+		{
+			System.err.println("MapReduce::Suffle interrupted.");
+			result = Error.CError;
+		}
+		catch (ExecutionException e)
+		{
+			System.err.println("MapReduce::Suffle thread error: " + e.getCause());
+			result = Error.CError;
+		}
+		finally
+		{
+			executor.shutdown();
+		}
+
+		return(result);
 	}
 	
 	// Ejecuta cada uno de los Reducers.
 	private Error Reduces()
 	{
+		Vector<Thread> threads = new Vector<Thread>();
+
+		// un fil per cada reducer
 		for(Reduce reduce : Reducers)
 		{
-			if (reduce.Run()!=Error.COk)
+			Thread thread = new Thread(reduce);
+			threads.add(thread);
+			thread.start();
+		}
+
+		// esperar que acabin tots els fils
+		try
+		{
+			for(Thread thread : threads)
+				thread.join();
+		}
+		catch (InterruptedException e)
+		{
+			System.err.println("MapReduce::Reduce interrupted.");
+			return(Error.CError);
+		}
+
+		// comprovar el resultat de cada reducer i sumar les paraules diferents
+		for(Reduce reduce : Reducers)
+		{
+			if (reduce.getResult()!=Error.COk)
 				Error.showError("MapReduce::Reduce Run error.\n");
+			DifferentWords += reduce.getDifferentWords();
 		}
 		System.out.println("Reduccers han procesado "+DifferentWords+" palabras diferentes.");
 		return(Error.COk);

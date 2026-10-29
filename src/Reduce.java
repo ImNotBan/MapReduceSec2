@@ -12,6 +12,7 @@ import java.util.*;
 // runnable per tal que es puguin utilitzar objectes Reduce com una tasca executada per un fil.
 class Reduce implements Runnable
 {
+    // paraules diferents d'aquest reducer, el fil principal les suma despres del join
     private long differentWords = 0;
     private Error result = null;
 
@@ -24,7 +25,7 @@ class Reduce implements Runnable
         return result;
     }
 
-    // runnable no retorna cap valor, per això guardem el resultat de Run() a result.
+    // run no pot retornar res, per aixo guardem el resultat a result
     @Override
     public void run()
     {
@@ -109,7 +110,7 @@ class Reduce implements Runnable
 	{
 		OutputFile.write(key + " " + value + "\n");
 //		MapReduce.DifferentWords++;
-        differentWords++;           // per evitar perdre increments entre reducers
+        differentWords++;           // comptador propi del reducer, aixi no hi ha condicions de carrera
 	}
 
 		
