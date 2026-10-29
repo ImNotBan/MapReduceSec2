@@ -115,57 +115,61 @@ abstract class MapReduce
 		// Process input files
 		cod = ProcessInputFiles(inputDir);
 
-		// Create only one Mapper and assign all input splits
 		if (cod==Error.COk)
 		{
-			// Create new mapper
-			Map mapper = new Map(this);
-			AddMapper(mapper);
+            // crear un map per cada split
+			for(Split split : Splits){
+                Map mapper = new Map(this, split);
+                AddMapper(mapper);
 
-			// Assigna all splits to the mapper
-			for(Split split : Splits)
-				mapper.addInputSplit(split.getInput());
+            }
+
 		}
 		return cod;
 	}
 
-	// Genera y lee diferentes splits: 1 split por fichero. Genera un vector con todos los splits generados.
-	private Error ProcessInputFiles(String input)
+    private Error ProcessInputFiles(String input)
+    {
+        File folder = new File(input);
+
+        // Si l'entrada és un fitxer, preparar el seu Split.
+        if (!folder.isDirectory())
+            return ProcessInputFile(folder);
+
+        // Si és una carpeta, obtenir-ne el contingut.
+        File[] files = folder.listFiles();
+        if (files == null)
+            return Error.CErrorOpenInputDir;
+
+        for (File file : files)
+        {
+            // També permet entrar a les subcarpetes.
+            Error result = ProcessInputFiles(file.getAbsolutePath());
+
+            if (result != Error.COk)
+                return result;
+        }
+
+        return Error.COk;
+    }
+
+	private Error ProcessInputFile(File file)
 	{
-		File folder = new File(input);
+        Split split = new Split();
 
-		Split split = new Split();
-		AddSplit(split);
-		
-		if (folder.isDirectory()) 
-		{
-			File[] listOfFiles = folder.listFiles();
-		
-			/* Read all the files and directories within directory */
-		    for (int i = 0; i < listOfFiles.length; i++) 
-		    {
-		    	if (listOfFiles[i].isFile()) 
-		    	{
-		    		System.out.println("Processing input file " + listOfFiles[i].getName() + ".");
-					incProcessedFiles();
-					split.ReadFileTuples(listOfFiles[i].getAbsolutePath());
-		    	}
-		    	else if (listOfFiles[i].isDirectory()) {
-		    		System.out.println("Directory " + listOfFiles[i].getName());
-					return ProcessInputFiles(listOfFiles[i].getName());
-		    	}
-		    }
-		}
-		else 
-		{
-			System.out.println("Processing input file " + folder.getName() + ".");
-			incProcessedFiles();
-			split.ReadFileTuples(folder.getAbsolutePath());
-		}
+        System.out.println("Processing  input file " + file.getName() + ".");
 
-		split.AddInput(new MapInputTuple(-1, ""));
-		
-		return(Error.COk);
+
+        // Llegir les línies i comprovar si hi ha hagut algun error.
+        Error result = split.ReadFileTuples(file.getAbsolutePath());
+        if (result != Error.COk) return result;
+
+        split.AddInput(new MapInputTuple(-1, ""));
+
+        AddSplit(split);
+        incProcessedFiles();
+
+        return Error.COk;
 	}
 	
 	
