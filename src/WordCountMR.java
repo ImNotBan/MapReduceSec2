@@ -1,5 +1,11 @@
 
+/*
+ * Practica 1 - Sistemes Concurrents i Paral·lels. Grau en Enginyeria Informatica.
+ * Codi font: WordCountMR.java. Adaptacio del projecte sequencial proporcionat.
+ * Autors: Oriol Llado Real i Edmon. Cognoms complets i NIF: pendents d'omplir.
+ */
 import java.util.Collection;
+import java.util.Locale;
 
 
 public class WordCountMR extends MapReduce 
@@ -14,14 +20,14 @@ public class WordCountMR extends MapReduce
 
 	// Word Count Map.
 	@Override
-	public Error Map(Map map, MapInputTuple tuple)
+	public Error Map(Map map, MapInputTuple tuple) throws InterruptedException
 	{
 		String value = tuple.getValue();
 
 		if (MapReduce.DEBUG) System.err.println("DEBUG::MapWordCount procesing tuple " + tuple.getKey() + " -> "+ tuple.getValue());
 		
 		// Emit map result (word,'1').
-		for (String word : value.toLowerCase().split("[^\\p{L}]+")) {
+		for (String word : value.toLowerCase(Locale.ROOT).split("[^\\p{L}]+")) {
 			if (!word.isEmpty())
 				map.EmitResult(word, 1);
 		}

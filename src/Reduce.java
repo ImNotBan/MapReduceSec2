@@ -1,117 +1,75 @@
-
-import java.io.FileNotFoundException;
+/*
+ * Practica 1 - Sistemes Concurrents i Paral·lels. Grau en Enginyeria Informatica.
+ * Codi font: Reduce.java. Adaptacio del projecte sequencial proporcionat.
+ * Autors: Oriol Llado Real i Edmon. Cognoms complets i NIF: pendents d'omplir.
+ */
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
 import java.util.*;
+import java.util.concurrent.CancellationException;
 
-//import com.google.common.collect.ArrayListMultimap;
-//import com.google.common.collect.ListMultimap;
-//import com.google.common.collect.Multimaps;
-
-
-
-// runnable per tal que es puguin utilitzar objectes Reduce com una tasca executada per un fil.
 class Reduce implements Runnable
 {
-    // paraules diferents d'aquest reducer, el fil principal les suma despres del join
-    private long differentWords = 0;
-    private Error result = null;
+    private final MapReduce mapReduce;
+    private final String OutputPath;
+    private TreeMap<String, List<Integer>> Input = new TreeMap<>();
+    private PrintWriter OutputFile;
+    private long differentWords;
+    private Error result = Error.CError;
 
-    public long getDifferentWords() {
-        return differentWords;
-    }
-
-    public Error getResult()
+    public Reduce(MapReduce mapReduce, String outputPath)
     {
-        return result;
+        this.mapReduce = mapReduce;
+        OutputPath = outputPath;
     }
+    public long getDifferentWords() { return differentWords; }
+    public Error getResult() { return result; }
 
-    // run no pot retornar res, per aixo guardem el resultat a result
+    // Nomes el Shuffle propietari l'invoca, abans de crear el fil reducer.
+    public void SetInput(TreeMap<String, List<Integer>> input) { Input = input; }
+
     @Override
     public void run()
     {
-        result = Run();
+        try
+        {
+            result = Run();
+            if (result != Error.COk) mapReduce.ReportError("Error escrivint la sortida: " + OutputPath);
+        }
+        catch (RuntimeException e)
+        {
+            result = Error.CError;
+            mapReduce.ReportError("Error al reducer: " + e.getMessage());
+        }
     }
 
-	private MapReduce 	mapReduce;
-	PrintWriter 		OutputFile;
-	//private ListMultimap<String, Integer> Input = Multimaps.synchronizedListMultimap(ArrayListMultimap.<String, Integer> create());
-	private HashMap<String, List<Integer>> Input = new HashMap<String, List<Integer>>();
+    public Error Run()
+    {
+        // Cada fil es propietari del seu mapa i del seu fitxer de sortida.
+        try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(
+                Path.of(OutputPath), StandardCharsets.UTF_8)))
+        {
+            OutputFile = writer;
+            for (String key : Input.keySet())
+            {
+                if (Thread.currentThread().isInterrupted() || mapReduce.HasError()) return Error.CError;
+                Error error = mapReduce.Reduce(this, key, Input.get(key));
+                if (error != Error.COk) return error;
+            }
+            writer.flush();
+            // PrintWriter no llanca IOException durant write: cal comprovar-ho.
+            return writer.checkError() ? Error.CErrorOpenOutputFile : Error.COk;
+        }
+        catch (IOException e) { return Error.CErrorOpenOutputFile; }
+    }
 
-		
-	// Constructor para una tarea Reduce, se le pasa la función que reducción que tiene que 
-	// ejecutar para cada tupla de entrada y el nombre del fichero de salida en donde generará 
-	// los resultados.
-	
-	public Reduce(MapReduce mapr, String OutputPath)
-	{
-		mapReduce = mapr;
-		try {
-			OutputFile = new PrintWriter(OutputPath);
-		} 
-		catch (FileNotFoundException e) 
-		{
-			System.err.println("Reduce::ERROR Open output file " + OutputPath + ".");
-			e.printStackTrace();
-		} 
-	}
-
-
-	// Finish: cierra fichero salida.
-	public void Finish()
-	{
-		OutputFile.close();
-	}
-
-
-	// Función para añadir las tuplas de entrada para la función de redución en forma de lista de 
-	// tuplas (key,value).
-	public void AddInputKeys(String key, Collection<Integer> values)
-	{
-		for (Integer value : values)
-			AddInput(key, value);
-	}
-
-
-	private void AddInput(String key, Integer value)
-	{
-		if (MapReduce.DEBUG) System.err.println("DEBUG::Reduce add input "+ key + "-> " + value);
-		//Input.put(key,value);
-		Input.computeIfAbsent(key, k -> new ArrayList<>()).add(value);
-
-
-	}
-
-
-	// Función de ejecución de la tarea Reduce: por cada tupla de entrada invoca a la función 
-	// especificada por el programador, pasandolo el objeto Reduce, la clave y la lista de 
-	// valores.
-	public Error Run()
-	{
-		Iterator<String> keyIterator = Input.keySet().iterator();
-		while(keyIterator.hasNext())
-		{
-			String key = keyIterator.next();
-
-			Error err = mapReduce.Reduce(this, key, Input.get(key));
-			if (err!=Error.COk)
-				return(err);
-
-			keyIterator.remove();
-		}
-
-		Finish();
-
-		return(Error.COk);
-	}
-
-
-	// Función para escribir un resultado en el fichero de salida.
-	public void EmitResult(String key, int value)
-	{
-		OutputFile.write(key + " " + value + "\n");
-//		MapReduce.DifferentWords++;
-        differentWords++;           // comptador propi del reducer, aixi no hi ha condicions de carrera
-	}
-
-		
+    public void EmitResult(String key, int value)
+    {
+        if (Thread.currentThread().isInterrupted() || mapReduce.HasError())
+            throw new CancellationException("Reduccio cancel·lada.");
+        OutputFile.write(key + " " + value + "\n");
+        differentWords++;
+    }
 }

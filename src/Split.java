@@ -1,69 +1,81 @@
+/*
+ * Practica 1 - Sistemes Concurrents i Paral·lels. Grau en Enginyeria Informatica.
+ * Codi font: Split.java. Adaptacio del projecte sequencial proporcionat.
+ * Autors: Oriol Llado Real i Edmon. Cognoms complets i NIF: pendents d'omplir.
+ */
 import java.io.*;
-import java.util.Vector;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 public class Split implements Runnable
 {
-    private Vector<MapInputTuple> Input = new Vector<MapInputTuple>();
-
-    public Vector<MapInputTuple> getInput()
-    {
-        return(Input);
-    }
-
-
+    private static final int INPUT_QUEUE_SIZE = 256;
+    private final LinkedBlockingQueue<MapInputTuple> Input = new LinkedBlockingQueue<>(INPUT_QUEUE_SIZE);
+    private final MapReduce mapReduce;
     private final String fileName;
+    private Error result = Error.CError;
 
-    public Split(String fileName){
+    public Split(MapReduce mapReduce, String fileName)
+    {
+        this.mapReduce = mapReduce;
         this.fileName = fileName;
     }
-
-    private Error result = Error.CError;
-    public Error getResult(){
-        return result;
-    }
+    public LinkedBlockingQueue<MapInputTuple> getInput() { return Input; }
+    public Error getResult() { return result; }
 
     @Override
-    public void run(){
-        try {
-            result = ReadFileTuples(fileName);
-        } catch (RuntimeException e) {
-            System.err.println("Split::ERROR Reading file " + fileName + ": " + e.getMessage());
-            result = Error.CErrorReadingFile;
-        }
-    }
-
-
-    // Lee fichero de entrada (split) línea a línea y lo guarda en un vector en forma de tuplas (key,value).
-    public Error ReadFileTuples(String fileName)
+    public void run()
     {
-        long Offset=0;
-        if (Thread.currentThread().isInterrupted())
-            return Error.CError;
-
-        // El lector es tanca tant si la lectura acaba be com si falla.
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(fileName)))) {
-            String line;
-            while ((line = br.readLine())!=null)
+        try
+        {
+            result = ReadFileTuples(fileName);
+            if (result == Error.COk)
             {
-                if (Thread.currentThread().isInterrupted())
-                    return Error.CError;
-                if (MapReduce.DEBUG) System.err.println("DEBUG::Map input " + Offset + " -> " + line);
-                AddInput(new MapInputTuple(Offset, line));
-                Offset+=line.length();
+                // El productor posa el marcador despres de l'ultima linia.
+                if (!AddInput(new MapInputTuple(-1, ""))) result = Error.CError;
             }
-        } catch (FileNotFoundException e) {
-            System.err.println("Split::ERROR File "+fileName+" not found.");
-            e.printStackTrace();
-            return(Error.CErrorOpenInputFile);
-        } catch (IOException e) {
-            System.err.println("Split::ERROR Reading file "+fileName+".");
-            e.printStackTrace();
-            return(Error.CErrorReadingFile);
+            if (result != Error.COk) mapReduce.ReportError("Error llegint el fitxer: " + fileName);
         }
-
-        return(Error.COk);
+        catch (InterruptedException e)
+        {
+            result = Error.CError;
+            mapReduce.ReportError("Lectura interrompuda: " + fileName);
+            Thread.currentThread().interrupt();
+        }
+        catch (RuntimeException e)
+        {
+            result = Error.CErrorReadingFile;
+            mapReduce.ReportError("Error llegint " + fileName + ": " + e.getMessage());
+        }
     }
 
-    public void AddInput(MapInputTuple tuple) { Input.add(tuple); }
+    public Error ReadFileTuples(String fileName) throws InterruptedException
+    {
+        long offset = 0;
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                new FileInputStream(fileName), StandardCharsets.UTF_8)))
+        {
+            String line;
+            while ((line = reader.readLine()) != null)
+            {
+                if (!AddInput(new MapInputTuple(offset, line))) return Error.CError;
+                offset += line.length();
+            }
+            return Error.COk;
+        }
+        catch (FileNotFoundException e) { return Error.CErrorOpenInputFile; }
+        catch (IOException e) { return Error.CErrorReadingFile; }
+    }
 
+    private boolean AddInput(MapInputTuple tuple) throws InterruptedException
+    {
+        // L'espera limitada permet detectar un error d'una altra etapa.
+        while (!mapReduce.HasError())
+        {
+            if (Thread.currentThread().isInterrupted()) throw new InterruptedException();
+            if (Input.offer(tuple, 50, TimeUnit.MILLISECONDS)) return true;
+        }
+        return false;
+    }
 }
