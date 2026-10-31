@@ -3,6 +3,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
+import java.util.concurrent.Callable;
 //import com.google.common.collect.*;
 
 
@@ -26,7 +27,7 @@ class MapInputTuple
 
 
 
-public class Map
+public class Map implements Callable<Long>
 {
 	private MapReduce mapReduce;
 	private Vector<MapInputTuple> Input = new Vector<MapInputTuple>();
@@ -76,6 +77,10 @@ public class Map
 
 		while (!Input.isEmpty())
 		{
+			// Permetre que el coordinador cancel·li la tasca si alguna altra falla.
+			if (Thread.currentThread().isInterrupted())
+				return Error.CError;
+
 			if (MapReduce.DEBUG) System.err.println("DEBUG::Map process input tuple " + Input.get(0).getKey() +" -> " + Input.get(0).getValue());
 
 			if (Input.get(0).Key<0)
@@ -98,10 +103,18 @@ public class Map
 	{
 		if (MapReduce.DEBUG) System.err.println("DEBUG::Map emit result " + key + " -> " + value);
 		//Output.put(key,Integer.valueOf(value));
-		Output.computeIfAbsent(key, k -> new ArrayList<>()).add(Integer.valueOf(value));
-
+        mapReduce.AddShuffleInput(key, value);
 		totalWords++;
 	}
+
+    @Override
+    public Long call(){
+        Error result = Run();
+        if(result != Error.COk)
+            throw new IllegalStateException("Error executant el Map: " + result);
+
+        return totalWords;
+    }
 
 }
 

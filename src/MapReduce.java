@@ -217,21 +217,63 @@ abstract class MapReduce
 	}
 	
 	
-	// Ejecuta cada uno de los Maps.
+	// Executar els Maps amb un pool limitat al nombre de fils indicat.
 	private Error Maps()
 	{
-        TotalWords = 0;
-		for(Map map : Mappers)
+		TotalWords = 0;
+		if (NThreads <= 0)
 		{
-			if (MapReduce.DEBUG) System.err.println("DEBUG::Running Map "+ map);
-			MappersRunning.incrementAndGet();
-			if (map.Run()!=Error.COk)
-				Error.showError("MapReduce::Map Run error.\n");
-			MappersRunning.decrementAndGet();
-            TotalWords += map.getTotalWords();
+			System.err.println("MapReduce::Maps requires at least one thread.");
+			return Error.CError;
 		}
+
+		// Comptar tambe les tasques que encara esperen torn al pool.
+		MappersRunning.set(Mappers.size());
+		try (ExecutorService executor = Executors.newFixedThreadPool(NThreads))
+		{
+			Vector<Future<Long>> futures = new Vector<Future<Long>>();
+			try
+			{
+				// Enviar tots els Maps abans d'esperar-ne els resultats.
+				for (Map map : Mappers)
+				{
+					futures.add(executor.submit(() -> {
+						try
+						{
+							return map.call();
+						}
+						finally
+						{
+							MappersRunning.decrementAndGet();
+						}
+					}));
+				}
+
+				// Nomes el coordinador suma els recomptes parcials.
+				for (Future<Long> future : futures)
+					TotalWords += future.get();
+			}
+			catch (InterruptedException e)
+			{
+				executor.shutdownNow();
+				Thread.currentThread().interrupt();
+				return Error.CError;
+			}
+			catch (ExecutionException | RuntimeException e)
+			{
+				executor.shutdownNow();
+				System.err.println("MapReduce::Map thread error: " + e);
+				return Error.CError;
+			}
+		}
+		finally
+		{
+			// El tancament del pool espera tots els fils, tambe en cas d'error.
+			MappersRunning.set(0);
+		}
+
 		System.out.println("\nMappers han procesado un total de "+TotalWords+" palabras.");
-		return(Error.COk);
+		return Error.COk;
 	}
 	
 	
@@ -301,20 +343,6 @@ abstract class MapReduce
 	// función de partición, para distribuir las claves entre los posibles reducers.
 	private Error Suffle()
 	{
-		// temporal: mentre Map no cridi AddShuffleInput, passem aqui les sortides dels mappers a les cues.
-		// s'ha de treure quan el map concurrent envii directament a les cues
-		for(Map map : Mappers)
-		{
-			if (MapReduce.DEBUG) map.PrintOutputs();
-
-			for (String key : map.GetOutput().keySet())
-				for (Integer value : map.GetOutput().get(key))
-					AddShuffleInput(key, value);
-
-			// Eliminar todas las salidas.
-			map.GetOutput().clear();
-		}
-
 		ExecutorService executor = Executors.newFixedThreadPool(NReducers);
 		Vector<Future<Error>> futures = new Vector<Future<Error>>();
 
