@@ -11,7 +11,11 @@ Output/
 .idea/shelf/
 .idea/usage.statistics.xml
 .idea/material_theme_project_new.xml
+.idea/libraries/
 
 # Material de l'assignatura i codi original (no es versiona)
 *.pdf
 *.zip
+
+# Copia antiga del projecte (sortides i compilats)
+MapReduceSec/

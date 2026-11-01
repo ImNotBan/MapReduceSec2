@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="WordCount">
-    <CLASSES>
-      <root url="jar://$PROJECT_DIR$/MapReduceSec/out/artifacts/WordCount/WordCount.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>
