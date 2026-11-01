@@ -50,4 +50,4 @@ La llista de valors agrupats continua creixent amb les paraules processades, com
 
 `proves.ps1` executa `tests/ComprovaPractica.java`, sense JUnit. Comprova els recomptes amb diverses combinacions de fils i reducers, accents, fitxers i carpetes buides, subcarpetes, reutilitzacio dels comptadors, particio amb hash minim, arguments invalids, errors de les tasques i de sortida, proteccio de l'entrada i cancel·lacio. Tambe comprova el limit del pool, el solapament real de les etapes i que no quedin fils vius.
 
-Les capçaleres dels fonts tenen indicats els camps d'autoria i NIF que heu d'omplir. Les mesures de rendiment i l'informe corresponen a l'Edmon.
+Les capçaleres dels fonts inclouen els noms complets i els NIF dels dos autors. Les mesures de rendiment i l'informe corresponen a l'Edmon.
