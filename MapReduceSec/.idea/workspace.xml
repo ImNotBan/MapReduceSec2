@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ArtifactsWorkspaceSettings">
+    <artifacts-to-build>
+      <artifact name="WordCount" />
+    </artifacts-to-build>
+  </component>
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="5031f1e9-ede1-4f75-9497-d7bb4b536fc9" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/../.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/../.gitignore" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="CodeStyleSettingsInfer">
+    <option name="done" value="true" />
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="47" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;ImNotBan&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/ImNotBan/MapReduceSec2.git&quot;,
+    &quot;accountId&quot;: &quot;01298400-fba0-4489-baad-a453be256289&quot;
+  }
+}</component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="NextEditCompletionFeaturesState">
+    <decayedCancelled>
+      <entry key="MS100" value="1.0000000000503226" />
+      <entry key="MS500" value="1.0087167134556638" />
+      <entry key="S2" value="1.305554154070144" />
+      <entry key="S5" value="1.6223508355652039" />
+      <entry key="S10" value="1.7888921571198462" />
+      <entry key="S30" value="1.9240012232387644" />
+      <entry key="S60" value="1.9612498235312006" />
+      <entry key="M2" value="1.9804334875610894" />
+      <entry key="M5" value="1.9921269676061892" />
+      <entry key="M10" value="1.9960557050718546" />
+      <entry key="M15" value="1.9973687384036878" />
+      <entry key="M30" value="1.998683502619167" />
+      <entry key="H1" value="1.9993415345211902" />
+      <entry key="H2" value="1.9996707130456457" />
+      <entry key="H4" value="1.9998353429668536" />
+      <entry key="D1" value="1.9999725552781793" />
+      <entry key="W1" value="1.9999960792793383" />
+    </decayedCancelled>
+    <decayedSelected>
+      <entry key="MS100" value="0.0" />
+      <entry key="MS500" value="0.0" />
+      <entry key="S2" value="0.0" />
+      <entry key="S5" value="0.0" />
+      <entry key="S10" value="0.0" />
+      <entry key="S30" value="0.0" />
+      <entry key="S60" value="0.0" />
+      <entry key="M2" value="0.0" />
+      <entry key="M5" value="0.0" />
+      <entry key="M10" value="0.0" />
+      <entry key="M15" value="0.0" />
+      <entry key="M30" value="0.0" />
+      <entry key="H1" value="0.0" />
+      <entry key="H2" value="0.0" />
+      <entry key="H4" value="0.0" />
+      <entry key="D1" value="0.0" />
+      <entry key="W1" value="0.0" />
+    </decayedSelected>
+    <decayedShown>
+      <entry key="MS100" value="2.547852584718474E-10" />
+      <entry key="MS500" value="0.012742640467129371" />
+      <entry key="S2" value="0.49319085838218346" />
+      <entry key="S5" value="1.1255039878963595" />
+      <entry key="S10" value="1.4965103372125494" />
+      <entry key="S30" value="1.8146756063487726" />
+      <entry key="S60" value="1.9049497286062855" />
+      <entry key="M2" value="1.9518615621805508" />
+      <entry key="M5" value="1.980595294882614" />
+      <entry key="M10" value="1.990272578720911" />
+      <entry key="M15" value="1.9935094682100472" />
+      <entry key="M30" value="1.9967519386008965" />
+      <entry key="H1" value="1.9983752697920159" />
+      <entry key="H2" value="1.9991874599397848" />
+      <entry key="H4" value="1.9995936862209431" />
+      <entry key="D1" value="1.999932274959741" />
+      <entry key="W1" value="1.9999903248454112" />
+    </decayedShown>
+  </component>
+  <component name="ProjectCodeStyleSettingsMigration">
+    <option name="version" value="2" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 4,
+  &quot;fromUser&quot;: false
+}</component>
+  <component name="ProjectId" id="3JlcXfwGiCFYI2t1o90dfJaOpB0" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Application.WordCount Directorio Test.executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/Edmon/Desktop/UNI/SCP/MapReduceSec2/MapReduceSec&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Artifacts&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RunManager" selected="Application.WordCount Directorio Test">
+    <configuration name="WordCount Directorio Test" type="Application" factoryName="Application">
+      <option name="MAIN_CLASS_NAME" value="WordCount" />
+      <module name="MapReduceSec" />
+      <option name="PROGRAM_PARAMETERS" value="./Test/ ./Output/Test 2 " />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="WordCount Quijote" type="Application" factoryName="Application">
+      <option name="MAIN_CLASS_NAME" value="WordCount" />
+      <module name="MapReduceSec" />
+      <option name="PROGRAM_PARAMETERS" value="./Test/Quijote.txt ./Output/Quijote 4" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="WordCount Test1.txt" type="Application" factoryName="Application">
+      <option name="MAIN_CLASS_NAME" value="WordCount" />
+      <module name="MapReduceSec" />
+      <option name="PROGRAM_PARAMETERS" value="./Test/test1.txt ./Output/Test1 " />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <list>
+      <item itemvalue="Application.WordCount Test1.txt" />
+      <item itemvalue="Application.WordCount Quijote" />
+      <item itemvalue="Application.WordCount Directorio Test" />
+    </list>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9823dce3aa75-bf35d07a577b-intellij.indexing.shared.core-IU-252.28238.7" />
+        <option value="bundled-js-predefined-d6986cc7102b-a71380e98a7c-JavaScript-IU-252.28238.7" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="5031f1e9-ede1-4f75-9497-d7bb4b536fc9" name="Changes" comment="" />
+      <created>1790239137544</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1790239137544</updated>
+      <workItem from="1790239139127" duration="1109000" />
+      <workItem from="1793202551229" duration="2283000" />
+      <workItem from="1793205485687" duration="4269000" />
+      <workItem from="1793268247114" duration="97000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>

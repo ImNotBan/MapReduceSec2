@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Split implements Runnable
 {
+    // cua limitada productor (split) - consumidor (map)
     private static final int INPUT_QUEUE_SIZE = 256;
     private final LinkedBlockingQueue<MapInputTuple> Input = new LinkedBlockingQueue<>(INPUT_QUEUE_SIZE);
     private final MapReduce mapReduce;
@@ -33,7 +34,7 @@ public class Split implements Runnable
             result = ReadFileTuples(fileName);
             if (result == Error.COk)
             {
-                // El productor posa el marcador despres de l'ultima linia.
+                // marcador de fi per al map
                 if (!AddInput(new MapInputTuple(-1, ""))) result = Error.CError;
             }
             if (result != Error.COk) mapReduce.ReportError("Error llegint el fitxer: " + fileName);
@@ -71,7 +72,7 @@ public class Split implements Runnable
 
     private boolean AddInput(MapInputTuple tuple) throws InterruptedException
     {
-        // L'espera limitada permet detectar un error d'una altra etapa.
+        // offer amb timeout: si una altra etapa falla no ens quedem bloquejats
         while (!mapReduce.HasError())
         {
             if (Thread.currentThread().isInterrupted()) throw new InterruptedException();

@@ -10,3 +10,8 @@ Output/
 .idea/workspace.xml
 .idea/shelf/
 .idea/usage.statistics.xml
+.idea/material_theme_project_new.xml
+
+# Material de l'assignatura i codi original (no es versiona)
+*.pdf
+*.zip

@@ -28,7 +28,7 @@ class Reduce implements Runnable
     public long getDifferentWords() { return differentWords; }
     public Error getResult() { return result; }
 
-    // Nomes el Shuffle propietari l'invoca, abans de crear el fil reducer.
+    // la crida el shuffle de la seva particio abans d'arrencar el fil
     public void SetInput(TreeMap<String, List<Integer>> input) { Input = input; }
 
     @Override
@@ -48,7 +48,7 @@ class Reduce implements Runnable
 
     public Error Run()
     {
-        // Cada fil es propietari del seu mapa i del seu fitxer de sortida.
+        // cada reducer te el seu mapa i el seu fitxer: no hi ha dades compartides
         try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(
                 Path.of(OutputPath), StandardCharsets.UTF_8)))
         {
@@ -60,7 +60,7 @@ class Reduce implements Runnable
                 if (error != Error.COk) return error;
             }
             writer.flush();
-            // PrintWriter no llanca IOException durant write: cal comprovar-ho.
+            // printwriter no llanca excepcions en escriure, cal mirar checkError
             return writer.checkError() ? Error.CErrorOpenOutputFile : Error.COk;
         }
         catch (IOException e) { return Error.CErrorOpenOutputFile; }

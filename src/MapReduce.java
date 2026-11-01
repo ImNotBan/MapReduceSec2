@@ -17,6 +17,7 @@ abstract class MapReduce
 {
     public static final boolean DEBUG = false;
     public static final int DTopN = 5;
+    // cues limitades: si el shuffle no dona l'abast els maps es bloquegen
     private static final int SHUFFLE_QUEUE_SIZE = 4096;
     private String InputPath = "";
     private String OutputFiles = "./result";
@@ -26,7 +27,7 @@ abstract class MapReduce
     private long TotalWords;
     private long DifferentWords;
 
-    // Inclou els Maps en execucio i els que encara esperen torn al pool.
+    // maps pendents + en execucio: el shuffle acaba quan es 0 i la seva cua es buida
     private final AtomicInteger MappersRunning = new AtomicInteger();
     private final Vector<Split> Splits = new Vector<>();
     private final Vector<Map> Mappers = new Vector<>();
@@ -37,7 +38,7 @@ abstract class MapReduce
             new Vector<>();
     private final Vector<Future<Long>> mapFutures = new Vector<>();
     private final Vector<Future<Error>> shuffleFutures = new Vector<>();
-    // Canal d'errors entre tasques: no afegim locks ni semafors propis.
+    // canal d'errors compartit: una tasca avisa i la resta s'aturen
     private final ConcurrentLinkedQueue<String> errors = new ConcurrentLinkedQueue<>();
     private ExecutorService mapExecutor;
     private ExecutorService shuffleExecutor;
@@ -109,7 +110,7 @@ abstract class MapReduce
         outputReady = true;
         for (int r = 0; r < NReducers; r++)
         {
-            // El constructor no obre el fitxer; nomes s'obre durant Reduce.
+            // una cua de shuffle per reducer; el fitxer no s'obre fins al reduce
             Reducers.add(new Reduce(this, outputPrefix + ".r" + (r + 1)));
             ShuffleQueues.add(new LinkedBlockingQueue<>(SHUFFLE_QUEUE_SIZE));
         }
@@ -126,7 +127,7 @@ abstract class MapReduce
             result = ProcessInputFiles(new File(InputPath));
             if (result != Error.COk) return result;
 
-            // Preparem els consumidors abans d'arrencar els lectors.
+            // primer els shuffles, aixi els maps ja poden emetre des del principi
             StartSuffle();
             StartSplit();
             result = Maps();
@@ -136,7 +137,7 @@ abstract class MapReduce
             result = WaitSuffle();
             if (result != Error.COk || HasError()) return Error.CError;
 
-            // Els fils reducers nomes es creen quan les tres etapes han acabat.
+            // barrera: el reduce nomes comenca quan split, map i shuffle han acabat
             result = Reduces();
             if (result != Error.COk || HasError()) return Error.CError;
             success = true;
@@ -156,6 +157,7 @@ abstract class MapReduce
         finally
         {
             StopAll();
+            // si ha fallat no deixem sortides parcials
             if (!success && outputReady)
             {
                 try { DeleteOutputFiles(); }
@@ -166,6 +168,7 @@ abstract class MapReduce
 
     private Error ProcessInputFiles(File file) throws IOException
     {
+        // no seguim enllacos simbolics per evitar cicles
         if (Files.isSymbolicLink(file.toPath()))
         {
             ReportError("No es processen enllaços simbolics: " + file);
@@ -206,6 +209,7 @@ abstract class MapReduce
         for (int i = 0; i < Splits.size(); i++)
         {
             if (Thread.currentThread().isInterrupted()) throw new InterruptedException();
+            // un fil virtual per fitxer: la lectura es bloquejant i aixi surt barat
             Thread thread = Thread.ofVirtual().name("split-" + i).unstarted(Splits.get(i));
             splitThreads.add(thread);
             thread.start();
@@ -225,11 +229,13 @@ abstract class MapReduce
 
     private Error Maps() throws InterruptedException, ExecutionException
     {
+        // pool fix de nthreads; cada map retorna el seu recompte pel future
         mapExecutor = Executors.newFixedThreadPool(NThreads);
         for (Map map : Mappers)
         {
             mapFutures.add(mapExecutor.submit(() -> {
                 try { return map.call(); }
+                // es decrementa encara que falli, si no el shuffle no acabaria mai
                 finally { MappersRunning.decrementAndGet(); }
             }));
         }
@@ -245,11 +251,13 @@ abstract class MapReduce
 
     public void AddShuffleInput(String key, Integer value) throws InterruptedException
     {
+        // particio per hash: una paraula sempre va al mateix shuffle i reducer
         int r = Math.abs(key.hashCode() % NReducers);
         AbstractMap.SimpleEntry<String, Integer> tuple = new AbstractMap.SimpleEntry<>(key, value);
         while (!HasError())
         {
             if (Thread.currentThread().isInterrupted()) throw new InterruptedException();
+            // offer amb timeout per no quedar bloquejat si una altra tasca ha fallat
             if (ShuffleQueues.get(r).offer(tuple, 50, TimeUnit.MILLISECONDS)) return;
         }
         throw new CancellationException("Una altra tasca ha fallat.");
@@ -274,7 +282,7 @@ abstract class MapReduce
                     if (tuple != null)
                         keys.computeIfAbsent(tuple.getKey(), k -> new ArrayList<>()).add(tuple.getValue());
                 }
-                // Transferencia de propietat: el reducer encara no s'ha iniciat.
+                // el reducer encara no ha arrencat: no cal sincronitzar el pas del mapa
                 Reducers.get(r).SetInput(keys);
                 return Error.COk;
             }
@@ -331,7 +339,7 @@ abstract class MapReduce
         while (!executor.awaitTermination(1, TimeUnit.SECONDS)) { }
     }
 
-    // S'executa sempre: cap productor ni consumidor queda pendent en sortir.
+    // neteja final: s'aturen i s'esperen tots els fils, tambe en cas d'error
     private void StopAll()
     {
         boolean interrupted = Thread.interrupted();
@@ -364,6 +372,7 @@ abstract class MapReduce
         if (interrupted) Thread.currentThread().interrupt();
     }
 
+    // evita agafar com a entrada els fitxers de sortida
     private boolean IsOutputFile(Path file)
     {
         Path path = file.toAbsolutePath().normalize();

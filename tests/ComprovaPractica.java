@@ -1,7 +1,8 @@
 /*
- * Practica 1 - Grau en Enginyeria Informatica. Codi font: tests/ComprovaPractica.java.
- * Autors: Oriol Llado Real i Edmon. Cognoms complets i NIF: pendents d'omplir.
- * Proves d'integracio sense JUnit ni biblioteques externes.
+ * Practica 1 - Sistemes Concurrents i Paral·lels. Grau en Enginyeria Informatica.
+ * Codi font: tests/ComprovaPractica.java. Proves d'integracio sense JUnit ni biblioteques externes.
+ * Autor 1: Oriol Lladó Real. NIF: 39507303L.
+ * Autor 2: Edmon Alcoceba Carbón. NIF: 47135257T.
  */
 import java.io.*;
 import java.lang.reflect.*;

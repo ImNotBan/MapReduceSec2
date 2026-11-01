@@ -17,6 +17,7 @@ class MapInputTuple
     public String getValue() { return Value; }
 }
 
+// callable perque el pool ens torni el recompte de paraules
 public class Map implements Callable<Long>
 {
     private final MapReduce mapReduce;
@@ -36,7 +37,7 @@ public class Map implements Callable<Long>
         {
             if (Thread.currentThread().isInterrupted()) throw new InterruptedException();
             MapInputTuple tuple = Input.poll(50, TimeUnit.MILLISECONDS);
-            // Una cua temporalment buida no vol dir que el fitxer hagi acabat.
+            // cua buida no vol dir fi de fitxer: la fi la marca la tupla amb clau -1
             if (tuple == null) continue;
             if (tuple.getKey() < 0) return Error.COk;
             Error result = mapReduce.Map(this, tuple);
@@ -47,6 +48,7 @@ public class Map implements Callable<Long>
 
     public void EmitResult(String key, int value) throws InterruptedException
     {
+        // envia directament al shuffle, sense guardar sortida local
         mapReduce.AddShuffleInput(key, value);
         totalWords++;
     }

@@ -14,7 +14,7 @@ public class WordCount
     public static void main(String[] args)
     {
         int exitCode = execute(args);
-        // En cas d'exit deixem que la JVM acabi sola: no amaguem fils pendents.
+        // nomes fem exit si hi ha error; si va be la jvm acaba sola
         if (exitCode != 0) System.exit(exitCode);
     }
 
